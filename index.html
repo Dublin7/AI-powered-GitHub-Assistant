@@ -1,0 +1,1971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Butler</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
+      --bg-hover: #30363d;
+      --border-color: #30363d;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted: #6e7681;
+      --accent-green: #3fb950;
+      --accent-blue: #58a6ff;
+      --accent-purple: #a371f7;
+      --accent-orange: #d29922;
+      --accent-red: #f85149;
+      --accent-pink: #db61a2;
+      --gradient-start: #238636;
+      --gradient-end: #2ea043;
+    }
+
+    .light {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f6f8fa;
+      --bg-tertiary: #eaeef2;
+      --bg-hover: #d0d7de;
+      --border-color: #d0d7de;
+      --text-primary: #1f2328;
+      --text-secondary: #656d76;
+      --text-muted: #8c959f;
+      --accent-green: #1a7f37;
+      --accent-blue: #0969da;
+      --accent-purple: #8250df;
+      --accent-orange: #9a6700;
+      --accent-red: #cf222e;
+      --accent-pink: #bf3989;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Space Grotesk', -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    code, pre, .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--bg-hover);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    /* App Container */
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: var(--text-primary);
+    }
+
+    .logo i {
+      font-size: 1.5rem;
+      color: var(--accent-purple);
+    }
+
+    .logo-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: var(--bg-tertiary);
+      border-radius: 20px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-red);
+    }
+
+    .status-dot.connected {
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--text-muted);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+      border-color: transparent;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+      background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    }
+
+    .btn-danger {
+      color: var(--accent-red);
+    }
+
+    .btn-danger:hover {
+      background: rgba(248, 81, 73, 0.1);
+      border-color: var(--accent-red);
+    }
+
+    /* Main Content */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+    }
+
+    .search-box i {
+      color: var(--text-muted);
+    }
+
+    .search-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.9rem;
+    }
+
+    .search-box input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .nav-tabs {
+      display: flex;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .nav-tab {
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-primary);
+    }
+
+    .nav-tab.active {
+      color: var(--accent-blue);
+      border-bottom-color: var(--accent-blue);
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .list-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .list-item:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .list-item.active {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+    }
+
+    .list-item-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-primary);
+      border-radius: 6px;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+
+    .list-item-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .list-item-title {
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .list-item-meta {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .list-item-stats {
+      display: flex;
+      gap: 12px;
+      margin-top: 6px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .list-item-stats span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Content Area */
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .content-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .content-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .content-title h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .content-title .badge {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .badge-open {
+      background: rgba(63, 185, 80, 0.15);
+      color: var(--accent-green);
+    }
+
+    .badge-closed {
+      background: rgba(248, 81, 73, 0.15);
+      color: var(--accent-red);
+    }
+
+    .badge-merged {
+      background: rgba(163, 113, 247, 0.15);
+      color: var(--accent-purple);
+    }
+
+    .badge-private {
+      background: rgba(210, 153, 34, 0.15);
+      color: var(--accent-orange);
+    }
+
+    .content-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    /* Welcome Screen */
+    .welcome-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .welcome-icon {
+      width: 100px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+      border-radius: 24px;
+      margin-bottom: 24px;
+      font-size: 2.5rem;
+      color: white;
+    }
+
+    .welcome-screen h1 {
+      font-size: 2rem;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .welcome-screen p {
+      color: var(--text-secondary);
+      max-width: 500px;
+      margin-bottom: 32px;
+    }
+
+    .token-form {
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .token-input-group {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .token-input-group input {
+      flex: 1;
+      padding: 14px 18px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+    }
+
+    .token-input-group input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+    }
+
+    .token-hint {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .token-hint a {
+      color: var(--accent-blue);
+      text-decoration: none;
+    }
+
+    .token-hint a:hover {
+      text-decoration: underline;
+    }
+
+    /* File Browser */
+    .file-tree {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .file-tree-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+
+    .breadcrumb-item {
+      color: var(--accent-blue);
+      cursor: pointer;
+    }
+
+    .breadcrumb-item:hover {
+      text-decoration: underline;
+    }
+
+    .breadcrumb-separator {
+      color: var(--text-muted);
+    }
+
+    .breadcrumb-current {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .file-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-color);
+      transition: background 0.2s;
+    }
+
+    .file-item:last-child {
+      border-bottom: none;
+    }
+
+    .file-item:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .file-item i {
+      color: var(--text-muted);
+      width: 20px;
+      text-align: center;
+    }
+
+    .file-item i.fa-folder {
+      color: var(--accent-blue);
+    }
+
+    .file-item-name {
+      flex: 1;
+      font-size: 0.9rem;
+    }
+
+    .file-item-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Code Viewer */
+    .code-viewer {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+
+    .code-viewer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .code-viewer-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .code-viewer-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .code-content {
+      padding: 16px;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+
+    .code-content pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Issue/PR View */
+    .issue-header {
+      margin-bottom: 24px;
+    }
+
+    .issue-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .issue-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .issue-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .issue-body {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .issue-body img {
+      max-width: 100%;
+      border-radius: 8px;
+    }
+
+    .markdown-content {
+      line-height: 1.7;
+    }
+
+    .markdown-content h1,
+    .markdown-content h2,
+    .markdown-content h3 {
+      margin-top: 24px;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .markdown-content p {
+      margin-bottom: 16px;
+    }
+
+    .markdown-content pre {
+      background: var(--bg-primary);
+      padding: 16px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin-bottom: 16px;
+    }
+
+    .markdown-content code {
+      background: var(--bg-primary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+
+    .markdown-content pre code {
+      background: none;
+      padding: 0;
+    }
+
+    /* AI Panel */
+    .ai-panel {
+      width: 380px;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .ai-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .ai-panel-header h3 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1rem;
+    }
+
+    .ai-panel-header h3 i {
+      color: var(--accent-purple);
+    }
+
+    .ai-panel-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .ai-message {
+      margin-bottom: 16px;
+      padding: 14px;
+      background: var(--bg-primary);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    .ai-message.user {
+      background: rgba(88, 166, 255, 0.1);
+      border-color: rgba(88, 166, 255, 0.3);
+    }
+
+    .ai-message-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .ai-message-content {
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .ai-panel-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .ai-quick-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .ai-quick-action {
+      padding: 6px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .ai-quick-action:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+      border-color: var(--accent-purple);
+    }
+
+    .ai-input-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .ai-input-group textarea {
+      flex: 1;
+      padding: 12px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.9rem;
+      resize: none;
+      min-height: 44px;
+      max-height: 120px;
+    }
+
+    .ai-input-group textarea:focus {
+      outline: none;
+      border-color: var(--accent-purple);
+    }
+
+    .ai-input-group .btn {
+      align-self: flex-end;
+    }
+
+    /* Loading States */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      color: var(--text-secondary);
+    }
+
+    .loading i {
+      font-size: 1.5rem;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-hover) 50%, var(--bg-tertiary) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Empty State */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+
+    .empty-state i {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      color: var(--text-muted);
+    }
+
+    .empty-state h3 {
+      font-size: 1.1rem;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .ai-panel {
+        display: none;
+      }
+
+      .sidebar {
+        width: 240px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+
+      .header {
+        padding: 10px 16px;
+      }
+
+      .content-body {
+        padding: 16px;
+      }
+
+      .token-input-group {
+        flex-direction: column;
+      }
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 80vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .modal-header h3 {
+      font-size: 1.1rem;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.25rem;
+      cursor: pointer;
+    }
+
+    .modal-close:hover {
+      color: var(--text-primary);
+    }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Labels */
+    .label {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-right: 4px;
+    }
+
+    /* Commit list */
+    .commit-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .commit-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+
+    .commit-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--bg-tertiary);
+    }
+
+    .commit-content {
+      flex: 1;
+    }
+
+    .commit-message {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .commit-meta {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .commit-sha {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--accent-blue);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <i class="fab fa-github"></i>
+        <div>
+          <div>GitHub Butler</div>
+          <div class="logo-subtitle">Your AI-powered GitHub assistant</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="connection-status">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusText">Not connected</span>
+        </div>
+        <button class="btn btn-danger hidden" id="disconnectBtn" onclick="disconnect()">
+          <i class="fas fa-sign-out-alt"></i>
+          Disconnect
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Sidebar -->
+      <aside class="sidebar hidden" id="sidebar">
+        <div class="sidebar-header">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search..." id="searchInput" oninput="handleSearch()">
+          </div>
+        </div>
+        <div class="nav-tabs">
+          <div class="nav-tab active" data-tab="repos" onclick="switchTab('repos')">
+            <i class="fas fa-book"></i> Repos
+          </div>
+          <div class="nav-tab" data-tab="issues" onclick="switchTab('issues')">
+            <i class="fas fa-exclamation-circle"></i> Issues
+          </div>
+          <div class="nav-tab" data-tab="prs" onclick="switchTab('prs')">
+            <i class="fas fa-code-branch"></i> PRs
+          </div>
+        </div>
+        <div class="sidebar-content" id="sidebarContent">
+          <!-- Dynamic content -->
+        </div>
+      </aside>
+
+      <!-- Content -->
+      <section class="content" id="contentArea">
+        <!-- Welcome Screen (shown when not connected) -->
+        <div class="welcome-screen" id="welcomeScreen">
+          <div class="welcome-icon">
+            <i class="fab fa-github"></i>
+          </div>
+          <h1>Welcome to GitHub Butler</h1>
+          <p>Connect your GitHub account to browse repositories, manage issues, review pull requests, and get AI-powered assistance right from Poe.</p>
+          <div class="token-form">
+            <div class="token-input-group">
+              <input type="password" id="tokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" class="mono">
+              <button class="btn btn-primary" onclick="connect()">
+                <i class="fas fa-plug"></i>
+                Connect
+              </button>
+            </div>
+            <p class="token-hint">
+              <i class="fas fa-info-circle"></i>
+              Enter your <a href="https://github.com/settings/tokens" target="_blank">Personal Access Token</a> (needs repo scope)
+            </p>
+          </div>
+        </div>
+
+        <!-- Connected View -->
+        <div class="hidden" id="connectedView">
+          <div class="content-header" id="contentHeader">
+            <div class="content-title">
+              <h2>Select an item</h2>
+            </div>
+          </div>
+          <div class="content-body" id="contentBody">
+            <div class="empty-state">
+              <i class="fas fa-hand-pointer"></i>
+              <h3>Select a repository, issue, or PR</h3>
+              <p>Choose an item from the sidebar to view details</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AI Panel -->
+      <aside class="ai-panel hidden" id="aiPanel">
+        <div class="ai-panel-header">
+          <h3><i class="fas fa-robot"></i> AI Assistant</h3>
+          <button class="btn" onclick="clearAIChat()">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+        <div class="ai-panel-content" id="aiMessages">
+          <div class="ai-message">
+            <div class="ai-message-header">
+              <i class="fas fa-robot"></i> Assistant
+            </div>
+            <div class="ai-message-content">
+              I'm here to help with your GitHub workflow! Ask me to explain code, review changes, draft responses, or help with any GitHub-related task.
+            </div>
+          </div>
+        </div>
+        <div class="ai-panel-footer">
+          <div class="ai-quick-actions" id="aiQuickActions">
+            <span class="ai-quick-action" onclick="quickAction('explain')">Explain this code</span>
+            <span class="ai-quick-action" onclick="quickAction('review')">Review changes</span>
+            <span class="ai-quick-action" onclick="quickAction('suggest')">Suggest improvements</span>
+          </div>
+          <div class="ai-input-group">
+            <textarea id="aiInput" placeholder="Ask the AI assistant..." rows="1" onkeydown="handleAIInputKey(event)"></textarea>
+            <button class="btn btn-primary" onclick="sendAIMessage()">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    // State
+    let token = null;
+    let currentUser = null;
+    let currentTab = 'repos';
+    let repos = [];
+    let issues = [];
+    let prs = [];
+    let selectedItem = null;
+    let currentContext = null;
+
+    // Dark mode detection
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      document.documentElement.classList.add('light');
+    }
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', event => {
+      if (event.matches) {
+        document.documentElement.classList.add('light');
+      } else {
+        document.documentElement.classList.remove('light');
+      }
+    });
+
+    // GitHub API
+    async function githubAPI(endpoint, options = {}) {
+      const response = await fetch(`https://api.github.com${endpoint}`, {
+        ...options,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          ...options.headers
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`GitHub API error: ${response.status}`);
+      }
+
+      return response.json();
+    }
+
+    // Connect to GitHub
+    async function connect() {
+      const input = document.getElementById('tokenInput');
+      const inputToken = input.value.trim();
+
+      if (!inputToken) {
+        showAlert('Please enter a Personal Access Token');
+        return;
+      }
+
+      token = inputToken;
+
+      try {
+        // Verify token by getting user info
+        currentUser = await githubAPI('/user');
+
+        // Update UI
+        document.getElementById('statusDot').classList.add('connected');
+        document.getElementById('statusText').textContent = `@${currentUser.login}`;
+        document.getElementById('disconnectBtn').classList.remove('hidden');
+        document.getElementById('welcomeScreen').classList.add('hidden');
+        document.getElementById('connectedView').classList.remove('hidden');
+        document.getElementById('sidebar').classList.remove('hidden');
+        document.getElementById('aiPanel').classList.remove('hidden');
+
+        // Load initial data
+        await loadRepos();
+      } catch (error) {
+        token = null;
+        showAlert('Failed to connect. Please check your token.');
+        console.error(error);
+      }
+    }
+
+    // Disconnect
+    function disconnect() {
+      token = null;
+      currentUser = null;
+      repos = [];
+      issues = [];
+      prs = [];
+      selectedItem = null;
+      currentContext = null;
+
+      document.getElementById('statusDot').classList.remove('connected');
+      document.getElementById('statusText').textContent = 'Not connected';
+      document.getElementById('disconnectBtn').classList.add('hidden');
+      document.getElementById('welcomeScreen').classList.remove('hidden');
+      document.getElementById('connectedView').classList.add('hidden');
+      document.getElementById('sidebar').classList.add('hidden');
+      document.getElementById('aiPanel').classList.add('hidden');
+      document.getElementById('tokenInput').value = '';
+    }
+
+    // Load repositories
+    async function loadRepos() {
+      const content = document.getElementById('sidebarContent');
+      content.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i></div>';
+
+      try {
+        repos = await githubAPI('/user/repos?sort=updated&per_page=50');
+        renderRepos();
+      } catch (error) {
+        content.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>Failed to load repos</h3></div>';
+        console.error(error);
+      }
+    }
+
+    // Render repositories
+    function renderRepos(filter = '') {
+      const content = document.getElementById('sidebarContent');
+      const filtered = repos.filter(r => r.full_name.toLowerCase().includes(filter.toLowerCase()));
+
+      if (filtered.length === 0) {
+        content.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open"></i><h3>No repositories found</h3></div>';
+        return;
+      }
+
+      content.innerHTML = filtered.map(repo => `
+        <div class="list-item ${selectedItem?.id === repo.id ? 'active' : ''}" onclick="selectRepo(${repo.id})">
+          <div class="list-item-icon">
+            <i class="fas ${repo.private ? 'fa-lock' : 'fa-book'}"></i>
+          </div>
+          <div class="list-item-content">
+            <div class="list-item-title">${repo.name}</div>
+            <div class="list-item-meta">${repo.owner.login}</div>
+            <div class="list-item-stats">
+              <span><i class="fas fa-star"></i> ${repo.stargazers_count}</span>
+              <span><i class="fas fa-code-branch"></i> ${repo.forks_count}</span>
+              ${repo.language ? `<span><i class="fas fa-circle" style="font-size: 8px;"></i> ${repo.language}</span>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Load issues
+    async function loadIssues() {
+      const content = document.getElementById('sidebarContent');
+      content.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i></div>';
+
+      try {
+        issues = await githubAPI('/issues?filter=all&state=open&per_page=50');
+        renderIssues();
+      } catch (error) {
+        content.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>Failed to load issues</h3></div>';
+        console.error(error);
+      }
+    }
+
+    // Render issues
+    function renderIssues(filter = '') {
+      const content = document.getElementById('sidebarContent');
+      const filtered = issues.filter(i =>
+        i.title.toLowerCase().includes(filter.toLowerCase()) ||
+        i.repository?.full_name?.toLowerCase().includes(filter.toLowerCase())
+      );
+
+      if (filtered.length === 0) {
+        content.innerHTML = '<div class="empty-state"><i class="fas fa-check-circle"></i><h3>No issues found</h3></div>';
+        return;
+      }
+
+      content.innerHTML = filtered.map(issue => `
+        <div class="list-item ${selectedItem?.id === issue.id ? 'active' : ''}" onclick="selectIssue(${issue.id})">
+          <div class="list-item-icon" style="color: var(--accent-green);">
+            <i class="fas fa-exclamation-circle"></i>
+          </div>
+          <div class="list-item-content">
+            <div class="list-item-title">${escapeHtml(issue.title)}</div>
+            <div class="list-item-meta">${issue.repository?.full_name || 'Unknown repo'} #${issue.number}</div>
+            <div class="list-item-stats">
+              <span><i class="fas fa-comment"></i> ${issue.comments}</span>
+              <span>${timeAgo(issue.created_at)}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Load PRs
+    async function loadPRs() {
+      const content = document.getElementById('sidebarContent');
+      content.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i></div>';
+
+      try {
+        prs = await githubAPI('/search/issues?q=is:pr+is:open+author:@me&per_page=50');
+        prs = prs.items || [];
+        renderPRs();
+      } catch (error) {
+        content.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>Failed to load PRs</h3></div>';
+        console.error(error);
+      }
+    }
+
+    // Render PRs
+    function renderPRs(filter = '') {
+      const content = document.getElementById('sidebarContent');
+      const filtered = prs.filter(pr =>
+        pr.title.toLowerCase().includes(filter.toLowerCase())
+      );
+
+      if (filtered.length === 0) {
+        content.innerHTML = '<div class="empty-state"><i class="fas fa-code-branch"></i><h3>No pull requests found</h3></div>';
+        return;
+      }
+
+      content.innerHTML = filtered.map(pr => `
+        <div class="list-item ${selectedItem?.id === pr.id ? 'active' : ''}" onclick="selectPR(${pr.id})">
+          <div class="list-item-icon" style="color: var(--accent-purple);">
+            <i class="fas fa-code-branch"></i>
+          </div>
+          <div class="list-item-content">
+            <div class="list-item-title">${escapeHtml(pr.title)}</div>
+            <div class="list-item-meta">${pr.repository_url?.split('/').slice(-2).join('/') || ''} #${pr.number}</div>
+            <div class="list-item-stats">
+              <span><i class="fas fa-comment"></i> ${pr.comments}</span>
+              <span>${timeAgo(pr.created_at)}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Switch tabs
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`.nav-tab[data-tab="${tab}"]`).classList.add('active');
+      document.getElementById('searchInput').value = '';
+
+      if (tab === 'repos') loadRepos();
+      else if (tab === 'issues') loadIssues();
+      else if (tab === 'prs') loadPRs();
+    }
+
+    // Search handler
+    function handleSearch() {
+      const filter = document.getElementById('searchInput').value;
+      if (currentTab === 'repos') renderRepos(filter);
+      else if (currentTab === 'issues') renderIssues(filter);
+      else if (currentTab === 'prs') renderPRs(filter);
+    }
+
+    // Select repository
+    async function selectRepo(id) {
+      const repo = repos.find(r => r.id === id);
+      if (!repo) return;
+
+      selectedItem = repo;
+      currentContext = { type: 'repo', data: repo };
+
+      const header = document.getElementById('contentHeader');
+      const body = document.getElementById('contentBody');
+
+      header.innerHTML = `
+        <div class="content-title">
+          <h2><i class="fas fa-book"></i> ${repo.full_name}</h2>
+          ${repo.private ? '<span class="badge badge-private"><i class="fas fa-lock"></i> Private</span>' : ''}
+        </div>
+        <div class="content-actions">
+          <a href="${repo.html_url}" target="_blank" class="btn">
+            <i class="fab fa-github"></i> Open on GitHub
+          </a>
+        </div>
+      `;
+
+      body.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i></div>';
+      renderRepos(document.getElementById('searchInput').value);
+
+      try {
+        // Load repo contents
+        const contents = await githubAPI(`/repos/${repo.full_name}/contents`);
+        const readme = await loadReadme(repo.full_name);
+
+        body.innerHTML = `
+          <div style="margin-bottom: 20px;">
+            <p style="color: var(--text-secondary);">${repo.description || 'No description'}</p>
+            <div style="display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap;">
+              <span><i class="fas fa-star"></i> ${repo.stargazers_count} stars</span>
+              <span><i class="fas fa-code-branch"></i> ${repo.forks_count} forks</span>
+              <span><i class="fas fa-eye"></i> ${repo.watchers_count} watchers</span>
+              ${repo.language ? `<span><i class="fas fa-code"></i> ${repo.language}</span>` : ''}
+            </div>
+          </div>
+
+          <div class="file-tree">
+            <div class="file-tree-header">
+              <div class="breadcrumb">
+                <span class="breadcrumb-current"><i class="fas fa-folder"></i> ${repo.name}</span>
+              </div>
+            </div>
+            <div class="file-list">
+              ${contents.sort((a, b) => {
+                if (a.type === 'dir' && b.type !== 'dir') return -1;
+                if (a.type !== 'dir' && b.type === 'dir') return 1;
+                return a.name.localeCompare(b.name);
+              }).map(item => `
+                <div class="file-item" onclick="browseFile('${repo.full_name}', '${item.path}', '${item.type}')">
+                  <i class="fas ${item.type === 'dir' ? 'fa-folder' : getFileIcon(item.name)}"></i>
+                  <span class="file-item-name">${item.name}</span>
+                  ${item.size ? `<span class="file-item-meta">${formatBytes(item.size)}</span>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          ${readme ? `
+            <div class="code-viewer" style="margin-top: 20px;">
+              <div class="code-viewer-header">
+                <div class="code-viewer-title">
+                  <i class="fas fa-book-open"></i> README.md
+                </div>
+                <button class="btn" onclick="askAI('Summarize this README')">
+                  <i class="fas fa-robot"></i> Summarize
+                </button>
+              </div>
+              <div class="code-content markdown-content">
+                ${marked.parse(readme)}
+              </div>
+            </div>
+          ` : ''}
+        `;
+
+        updateQuickActions('repo');
+      } catch (error) {
+        body.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>Failed to load repository</h3><p>${error.message}</p></div>`;
+        console.error(error);
+      }
+    }
+
+    // Load README
+    async function loadReadme(repoFullName) {
+      try {
+        const readme = await githubAPI(`/repos/${repoFullName}/readme`);
+        const content = atob(readme.content);
+        return content;
+      } catch {
+        return null;
+      }
+    }
+
+    // Browse file/folder
+    async function browseFile(repoFullName, path, type) {
+      const body = document.getElementById('contentBody');
+
+      if (type === 'dir') {
+        body.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i></div>';
+
+        try {
+          const contents = await githubAPI(`/repos/${repoFullName}/contents/${path}`);
+          const pathParts = path.split('/');
+
+          body.innerHTML = `
+            <div class="file-tree">
+              <div class="file-tree-header">
+                <div class="breadcrumb">
+                  <span class="breadcrumb-item" onclick="selectRepo(${selectedItem.id})"><i class="fas fa-folder"></i> ${repoFullName.split('/')[1]}</span>
+                  ${pathParts.map((part, i) => `
+                    <span class="breadcrumb-separator">/</span>
+                    ${i === pathParts.length - 1
+                      ? `<span class="breadcrumb-current">${part}</span>`
+                      : `<span class="breadcrumb-item" onclick="browseFile('${repoFullName}', '${pathParts.slice(0, i + 1).join('/')}', 'dir')">${part}</span>`
+                    }
+                  `).join('')}
+                </div>
+              </div>
+              <div class="file-list">
+                <div class="file-item" onclick="browseFile('${repoFullName}', '${pathParts.slice(0, -1).join('/') || ''}', 'dir')">
+                  <i class="fas fa-level-up-alt"></i>
+                  <span class="file-item-name">..</span>
+                </div>
+                ${contents.sort((a, b) => {
+                  if (a.type === 'dir' && b.type !== 'dir') return -1;
+                  if (a.type !== 'dir' && b.type === 'dir') return 1;
+                  return a.name.localeCompare(b.name);
+                }).map(item => `
+                  <div class="file-item" onclick="browseFile('${repoFullName}', '${item.path}', '${item.type}')">
+                    <i class="fas ${item.type === 'dir' ? 'fa-folder' : getFileIcon(item.name)}"></i>
+                    <span class="file-item-name">${item.name}</span>
+                    ${item.size ? `<span class="file-item-meta">${formatBytes(item.size)}</span>` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } catch (error) {
+          selectRepo(selectedItem.id);
+        }
+      } else {
+        // Load file content
+        body.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i></div>';
+
+        try {
+          const file = await githubAPI(`/repos/${repoFullName}/contents/${path}`);
+          let content = '';
+
+          try {
+            content = atob(file.content);
+          } catch {
+            content = '(Binary file or encoding not supported)';
+          }
+
+          currentContext = { type: 'file', data: { path, content, repo: repoFullName } };
+
+          const pathParts = path.split('/');
+
+          body.innerHTML = `
+            <div class="breadcrumb" style="margin-bottom: 16px;">
+              <span class="breadcrumb-item" onclick="selectRepo(${selectedItem.id})"><i class="fas fa-folder"></i> ${repoFullName.split('/')[1]}</span>
+              ${pathParts.map((part, i) => `
+                <span class="breadcrumb-separator">/</span>
+                ${i === pathParts.length - 1
+                  ? `<span class="breadcrumb-current">${part}</span>`
+                  : `<span class="breadcrumb-item" onclick="browseFile('${repoFullName}', '${pathParts.slice(0, i + 1).join('/')}', 'dir')">${part}</span>`
+                }
+              `).join('')}
+            </div>
+
+            <div class="code-viewer">
+              <div class="code-viewer-header">
+                <div class="code-viewer-title">
+                  <i class="fas ${getFileIcon(path)}"></i> ${pathParts[pathParts.length - 1]}
+                  <span style="color: var(--text-muted); font-weight: normal;">${formatBytes(file.size)}</span>
+                </div>
+                <div class="code-viewer-actions">
+                  <button class="btn" onclick="askAI('Explain this code')">
+                    <i class="fas fa-robot"></i> Explain
+                  </button>
+                  <a href="${file.html_url}" target="_blank" class="btn">
+                    <i class="fab fa-github"></i> View
+                  </a>
+                </div>
+              </div>
+              <div class="code-content">
+                <pre class="mono">${escapeHtml(content)}</pre>
+              </div>
+            </div>
+          `;
+
+          updateQuickActions('file');
+        } catch (error) {
+          body.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>Failed to load file</h3></div>`;
+          console.error(error);
+        }
+      }
+    }
+
+    // Select issue
+    async function selectIssue(id) {
+      const issue = issues.find(i => i.id === id);
+      if (!issue) return;
+
+      selectedItem = issue;
+      currentContext = { type: 'issue', data: issue };
+
+      const header = document.getElementById('contentHeader');
+      const body = document.getElementById('contentBody');
+
+      header.innerHTML = `
+        <div class="content-title">
+          <h2>Issue #${issue.number}</h2>
+          <span class="badge badge-open"><i class="fas fa-exclamation-circle"></i> Open</span>
+        </div>
+        <div class="content-actions">
+          <a href="${issue.html_url}" target="_blank" class="btn">
+            <i class="fab fa-github"></i> Open on GitHub
+          </a>
+        </div>
+      `;
+
+      body.innerHTML = `
+        <div class="issue-header">
+          <h1 class="issue-title">${escapeHtml(issue.title)}</h1>
+          <div class="issue-meta">
+            <div class="issue-meta-item">
+              <img src="${issue.user.avatar_url}" style="width: 20px; height: 20px; border-radius: 50%;">
+              ${issue.user.login}
+            </div>
+            <div class="issue-meta-item">
+              <i class="fas fa-clock"></i>
+              opened ${timeAgo(issue.created_at)}
+            </div>
+            <div class="issue-meta-item">
+              <i class="fas fa-comment"></i>
+              ${issue.comments} comments
+            </div>
+          </div>
+        </div>
+
+        ${issue.labels?.length ? `
+          <div style="margin-bottom: 20px;">
+            ${issue.labels.map(l => `
+              <span class="label" style="background: #${l.color}20; color: #${l.color};">${l.name}</span>
+            `).join('')}
+          </div>
+        ` : ''}
+
+        <div class="issue-body markdown-content">
+          ${issue.body ? marked.parse(issue.body) : '<p style="color: var(--text-muted);">No description provided.</p>'}
+        </div>
+
+        <div style="margin-top: 24px;">
+          <button class="btn" onclick="askAI('Draft a response to this issue')">
+            <i class="fas fa-robot"></i> Draft Response
+          </button>
+          <button class="btn" onclick="askAI('Suggest a solution for this issue')">
+            <i class="fas fa-lightbulb"></i> Suggest Solution
+          </button>
+        </div>
+      `;
+
+      renderIssues(document.getElementById('searchInput').value);
+      updateQuickActions('issue');
+    }
+
+    // Select PR
+    async function selectPR(id) {
+      const pr = prs.find(p => p.id === id);
+      if (!pr) return;
+
+      selectedItem = pr;
+      currentContext = { type: 'pr', data: pr };
+
+      const header = document.getElementById('contentHeader');
+      const body = document.getElementById('contentBody');
+
+      header.innerHTML = `
+        <div class="content-title">
+          <h2>PR #${pr.number}</h2>
+          <span class="badge badge-open"><i class="fas fa-code-branch"></i> Open</span>
+        </div>
+        <div class="content-actions">
+          <a href="${pr.html_url}" target="_blank" class="btn">
+            <i class="fab fa-github"></i> Open on GitHub
+          </a>
+        </div>
+      `;
+
+      body.innerHTML = `
+        <div class="issue-header">
+          <h1 class="issue-title">${escapeHtml(pr.title)}</h1>
+          <div class="issue-meta">
+            <div class="issue-meta-item">
+              <img src="${pr.user.avatar_url}" style="width: 20px; height: 20px; border-radius: 50%;">
+              ${pr.user.login}
+            </div>
+            <div class="issue-meta-item">
+              <i class="fas fa-clock"></i>
+              opened ${timeAgo(pr.created_at)}
+            </div>
+            <div class="issue-meta-item">
+              <i class="fas fa-comment"></i>
+              ${pr.comments} comments
+            </div>
+          </div>
+        </div>
+
+        ${pr.labels?.length ? `
+          <div style="margin-bottom: 20px;">
+            ${pr.labels.map(l => `
+              <span class="label" style="background: #${l.color}20; color: #${l.color};">${l.name}</span>
+            `).join('')}
+          </div>
+        ` : ''}
+
+        <div class="issue-body markdown-content">
+          ${pr.body ? marked.parse(pr.body) : '<p style="color: var(--text-muted);">No description provided.</p>'}
+        </div>
+
+        <div style="margin-top: 24px;">
+          <button class="btn" onclick="askAI('Review this pull request')">
+            <i class="fas fa-robot"></i> AI Review
+          </button>
+          <button class="btn" onclick="askAI('Suggest improvements for this PR')">
+            <i class="fas fa-lightbulb"></i> Suggest Improvements
+          </button>
+        </div>
+      `;
+
+      renderPRs(document.getElementById('searchInput').value);
+      updateQuickActions('pr');
+    }
+
+    // AI Integration
+    function updateQuickActions(contextType) {
+      const container = document.getElementById('aiQuickActions');
+
+      const actions = {
+        repo: [
+          { label: 'Explain structure', action: 'explain' },
+          { label: 'Suggest improvements', action: 'suggest' },
+          { label: 'Generate docs', action: 'docs' }
+        ],
+        file: [
+          { label: 'Explain code', action: 'explain' },
+          { label: 'Find bugs', action: 'bugs' },
+          { label: 'Refactor suggestions', action: 'refactor' }
+        ],
+        issue: [
+          { label: 'Draft response', action: 'response' },
+          { label: 'Suggest solution', action: 'solution' },
+          { label: 'Summarize', action: 'summarize' }
+        ],
+        pr: [
+          { label: 'Review code', action: 'review' },
+          { label: 'Check for issues', action: 'issues' },
+          { label: 'Summarize changes', action: 'summarize' }
+        ]
+      };
+
+      const items = actions[contextType] || actions.repo;
+      container.innerHTML = items.map(a =>
+        `<span class="ai-quick-action" onclick="quickAction('${a.action}')">${a.label}</span>`
+      ).join('');
+    }
+
+    function quickAction(action) {
+      const prompts = {
+        explain: 'Explain this code/content in detail',
+        suggest: 'Suggest improvements',
+        docs: 'Generate documentation',
+        bugs: 'Find potential bugs or issues',
+        refactor: 'Suggest refactoring improvements',
+        response: 'Draft a helpful response',
+        solution: 'Suggest a solution',
+        summarize: 'Provide a concise summary',
+        review: 'Review this code and provide feedback',
+        issues: 'Check for potential issues or problems'
+      };
+
+      askAI(prompts[action] || action);
+    }
+
+    function askAI(prompt) {
+      const input = document.getElementById('aiInput');
+      input.value = prompt;
+      sendAIMessage();
+    }
+
+    function handleAIInputKey(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendAIMessage();
+      }
+    }
+
+    async function sendAIMessage() {
+      const input = document.getElementById('aiInput');
+      const message = input.value.trim();
+
+      if (!message) return;
+
+      input.value = '';
+
+      // Add user message
+      addAIMessage(message, true);
+
+      // Build context
+      let contextText = '';
+      if (currentContext) {
+        if (currentContext.type === 'file') {
+          contextText = `\n\nFile: ${currentContext.data.path}\nRepository: ${currentContext.data.repo}\n\nContent:\n\`\`\`\n${currentContext.data.content.substring(0, 10000)}\n\`\`\``;
+        } else if (currentContext.type === 'issue') {
+          contextText = `\n\nIssue #${currentContext.data.number}: ${currentContext.data.title}\n\nDescription:\n${currentContext.data.body || 'No description'}`;
+        } else if (currentContext.type === 'pr') {
+          contextText = `\n\nPull Request #${currentContext.data.number}: ${currentContext.data.title}\n\nDescription:\n${currentContext.data.body || 'No description'}`;
+        } else if (currentContext.type === 'repo') {
+          contextText = `\n\nRepository: ${currentContext.data.full_name}\nDescription: ${currentContext.data.description || 'No description'}\nLanguage: ${currentContext.data.language || 'Not specified'}`;
+        }
+      }
+
+      const fullPrompt = `You are a helpful GitHub assistant. ${message}${contextText}`;
+
+      // Add loading message
+      const loadingId = addAIMessage('<i class="fas fa-spinner fa-spin"></i> Thinking...', false, true);
+
+      try {
+        if (window.Poe) {
+          window.Poe.registerHandler('github-ai-handler', (result) => {
+            const msg = result.responses[0];
+            const loadingEl = document.getElementById(loadingId);
+
+            if (msg.status === 'error') {
+              if (loadingEl) {
+                loadingEl.querySelector('.ai-message-content').innerHTML = `<span style="color: var(--accent-red);">Error: ${msg.statusText}</span>`;
+              }
+            } else {
+              if (loadingEl) {
+                loadingEl.querySelector('.ai-message-content').innerHTML = marked.parse(msg.content);
+              }
+            }
+          });
+
+          await window.Poe.sendUserMessage(`@Claude-Sonnet-4.5 ${fullPrompt}`, {
+            handler: 'github-ai-handler',
+            stream: true,
+            openChat: false
+          });
+        } else {
+          // Fallback for testing
+          const loadingEl = document.getElementById(loadingId);
+          if (loadingEl) {
+            loadingEl.querySelector('.ai-message-content').innerHTML = 'Poe API not available. Please run this app in Poe.';
+          }
+        }
+      } catch (error) {
+        const loadingEl = document.getElementById(loadingId);
+        if (loadingEl) {
+          loadingEl.querySelector('.ai-message-content').innerHTML = `<span style="color: var(--accent-red);">Error: ${error.message}</span>`;
+        }
+      }
+    }
+
+    function addAIMessage(content, isUser = false, isLoading = false) {
+      const container = document.getElementById('aiMessages');
+      const id = 'msg-' + Date.now();
+
+      const messageEl = document.createElement('div');
+      messageEl.className = `ai-message ${isUser ? 'user' : ''}`;
+      messageEl.id = id;
+      messageEl.innerHTML = `
+        <div class="ai-message-header">
+          <i class="fas ${isUser ? 'fa-user' : 'fa-robot'}"></i>
+          ${isUser ? 'You' : 'Assistant'}
+        </div>
+        <div class="ai-message-content ${isLoading ? '' : 'markdown-content'}">
+          ${isLoading ? content : (isUser ? escapeHtml(content) : marked.parse(content))}
+        </div>
+      `;
+
+      container.appendChild(messageEl);
+      container.scrollTop = container.scrollHeight;
+
+      return id;
+    }
+
+    function clearAIChat() {
+      document.getElementById('aiMessages').innerHTML = `
+        <div class="ai-message">
+          <div class="ai-message-header">
+            <i class="fas fa-robot"></i> Assistant
+          </div>
+          <div class="ai-message-content">
+            Chat cleared. How can I help you with your GitHub workflow?
+          </div>
+        </div>
+      `;
+    }
+
+    // Utility functions
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function timeAgo(dateString) {
+      const date = new Date(dateString);
+      const now = new Date();
+      const seconds = Math.floor((now - date) / 1000);
+
+      const intervals = [
+        { label: 'year', seconds: 31536000 },
+        { label: 'month', seconds: 2592000 },
+        { label: 'week', seconds: 604800 },
+        { label: 'day', seconds: 86400 },
+        { label: 'hour', seconds: 3600 },
+        { label: 'minute', seconds: 60 }
+      ];
+
+      for (const interval of intervals) {
+        const count = Math.floor(seconds / interval.seconds);
+        if (count >= 1) {
+          return `${count} ${interval.label}${count > 1 ? 's' : ''} ago`;
+        }
+      }
+
+      return 'just now';
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function getFileIcon(filename) {
+      const ext = filename.split('.').pop().toLowerCase();
+      const icons = {
+        js: 'fa-js',
+        ts: 'fa-js',
+        jsx: 'fa-react',
+        tsx: 'fa-react',
+        py: 'fa-python',
+        html: 'fa-html5',
+        css: 'fa-css3-alt',
+        json: 'fa-code',
+        md: 'fa-file-alt',
+        yml: 'fa-cog',
+        yaml: 'fa-cog',
+        sh: 'fa-terminal',
+        bash: 'fa-terminal',
+        git: 'fa-git-alt',
+        svg: 'fa-image',
+        png: 'fa-image',
+        jpg: 'fa-image',
+        jpeg: 'fa-image',
+        gif: 'fa-image'
+      };
+      return icons[ext] || 'fa-file-code';
+    }
+
+    // Custom alert (since alert() is not available in iframe)
+    function showAlert(message) {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal">
+          <div class="modal-header">
+            <h3>Notice</h3>
+            <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p>${escapeHtml(message)}</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove()">OK</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+  </script>
+</body>
+</html>
+
